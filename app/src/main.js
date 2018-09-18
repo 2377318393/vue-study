@@ -39,11 +39,27 @@ var app = new Vue({
     },
     components: {
         ChildComponent
+    },
+    directives: {
+        test1: {
+            bind: function () {
+                console.log('v-test1')
+            }
+        },
+        test2: function () {
+            console.log('v-test2')
+        },
+        test3:{
+            update : function(){
+                console.log('v-test3')
+            }
+        }
     }
 
 })
 app.$data.test = 3;
 console.log(app)
+
 
 
 
