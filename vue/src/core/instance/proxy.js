@@ -44,8 +44,11 @@ if (process.env.NODE_ENV !== 'production') {
 
   const hasHandler = {
     has (target, key) {
+      // has 常量是真实经过 in 运算符得来的结果
       const has = key in target
+      // 如果 key 在 allowedGlobals 之内，或者 key 是以下划线 _ 开头的字符串，则为真
       const isAllowed = allowedGlobals(key) || (typeof key === 'string' && key.charAt(0) === '_')
+      // 如果 has 和 isAllowed 都为假，使用 warnNonPresent 函数打印错误
       if (!has && !isAllowed) {
         warnNonPresent(target, key)
       }

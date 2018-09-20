@@ -69,6 +69,7 @@ export function mergeDataOrFn (
   childVal: any,
   vm?: Component
 ): ?Function {
+  // console.log('mergeDataOrFn:' ,parentVal , childVal )
   if (!vm) {
     // in a Vue.extend merge, both should be functions
     if (!childVal) {
@@ -130,13 +131,22 @@ strats.data = function (
 
 /**
  * Hooks and props are merged as arrays.
+ * 是否有 childVal，即判断组件的选项中是否有对应名字的生命周期钩子函数)
+  ? 如果有 childVal 则判断是否有 parentVal
+    ? 如果有 parentVal 则使用 concat 方法将二者合并为一个数组
+    : 如果没有 parentVal 则判断 childVal 是不是一个数组
+      ? 如果 childVal 是一个数组则直接返回
+      : 否则将其作为数组的元素，然后返回数组
+  : 如果没有 childVal 则直接返回 parentVal
  */
 function mergeHook (
   parentVal: ?Array<Function>,
   childVal: ?Function | ?Array<Function>
 ): ?Array<Function> {
+  // console.log('mergeHook:', parentVal , childVal )
   return childVal
     ? parentVal
+      //这里，合并且生成一个新的数组
       ? parentVal.concat(childVal)
       : Array.isArray(childVal)
         ? childVal
@@ -144,6 +154,8 @@ function mergeHook (
     : parentVal
 }
 
+
+// strats 策略对象上添加用来合并各个生命周期钩子选项的策略函数，并且这些生命周期钩子选项的策略函数相同：都是 mergeHook 函数
 LIFECYCLE_HOOKS.forEach(hook => {
   strats[hook] = mergeHook
 })
@@ -195,18 +207,26 @@ strats.watch = function (
     assertObjectType(key, childVal, vm)
   }
   if (!parentVal) return childVal
+  // 定义 ret 常量，其值为一个对象
   const ret = {}
+  // 将 parentVal 的属性混合到 ret 中，后面处理的都将是 ret 对象，最后返回的也是 ret 对象
   extend(ret, parentVal)
+  // 遍历 childVal
   for (const key in childVal) {
+     // 由于遍历的是 childVal，所以 key 是子选项的 key，父选项中未必能获取到值，所以 parent 未必有值
     let parent = ret[key]
+    // child 是肯定有值的，因为遍历的就是 childVal 本身
     const child = childVal[key]
+    // 这个 if 分支的作用就是如果 parent 存在，就将其转为数组
     if (parent && !Array.isArray(parent)) {
       parent = [parent]
     }
     ret[key] = parent
+    // 最后，如果 parent 存在，此时的 parent 应该已经被转为数组了，所以直接将 child concat 进去
       ? parent.concat(child)
       : Array.isArray(child) ? child : [child]
   }
+  // 最后返回新的 ret 对象
   return ret
 }
 
@@ -222,10 +242,13 @@ strats.computed = function (
   vm?: Component,
   key: string
 ): ?Object {
+  // 如果存在 childVal，那么在非生产环境下要检查 childVal 的类型
   if (childVal && process.env.NODE_ENV !== 'production') {
     assertObjectType(key, childVal, vm)
   }
+  // parentVal 不存在的情况下直接返回 childVal
   if (!parentVal) return childVal
+  // 如果 parentVal 存在，则创建 ret 对象，然后分别将 parentVal 和 childVal 的属性混合到 ret 中，注意：由于 childVal 将覆盖 parentVal 的同名属性
   const ret = Object.create(null)
   extend(ret, parentVal)
   if (childVal) extend(ret, childVal)
@@ -423,6 +446,7 @@ export function mergeOptions (
     const strat = strats[key] || defaultStrat
     options[key] = strat(parent[key], child[key], vm, key)
   }
+  // console.log('mergeOptions:',options)
   return options
 }
 

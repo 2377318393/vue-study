@@ -22,6 +22,7 @@ export let activeInstance: any = null
 export let isUpdatingChildComponent: boolean = false
 
 export function initLifecycle (vm: Component) {
+  // 定义 options，它是 vm.$options 的引用，后面的代码使用的都是 options 常量
   const options = vm.$options
 
   // locate first non-abstract parent
