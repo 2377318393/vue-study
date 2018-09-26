@@ -105,13 +105,17 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * Attempt to create an observer instance for a value,
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
+ * 第一个参数是要观测的数据，第二个参数是一个布尔值，代表将要被观测的数据是否是根级数据。
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
+  //如果要观测的数据不是一个对象或者是 VNode 实例，则直接 return
   if (!isObject(value) || value instanceof VNode) {
     return
   }
+  //接着定义变量 ob，该变量用来保存 Observer 实例，可以发现 observe 函数的返回值就是 ob
   let ob: Observer | void
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    //if 分支的作用是用来避免重复观测一个数据对象
     ob = value.__ob__
   } else if (
     shouldObserve &&
@@ -120,6 +124,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
+    //创建一个 Observer 实例
     ob = new Observer(value)
   }
   if (asRootData && ob) {

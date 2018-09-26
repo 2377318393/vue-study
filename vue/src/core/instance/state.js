@@ -109,6 +109,17 @@ function initProps (vm: Component, propsOptions: Object) {
   toggleObserving(true)
 }
 
+/**
+ * initData 函数主要完成如下工作:
+ * 根据 vm.$options.data 选项获取真正想要的数据（注意：此时 vm.$options.data 是函数）
+ * 校验得到的数据是否是一个纯对象
+ * 检查数据对象 data 上的键是否与 props 对象上的键冲突
+ * 检查 methods 对象上的键是否与 data 对象上的键冲突
+ * 在 Vue 实例对象上添加代理访问数据对象的同名属性
+ * 最后调用 observe 函数开启响应式之路
+ * 
+ */
+
 function initData (vm: Component) {
   let data = vm.$options.data
   data = vm._data = typeof data === 'function'
@@ -130,6 +141,8 @@ function initData (vm: Component) {
   while (i--) {
     const key = keys[i]
     if (process.env.NODE_ENV !== 'production') {
+      /**如果发现在 methods 对象上定义了同样的 key，也就是说 data 数据的 key 与 methods 对象中定义的函数名称相同，
+     * 那么会打印一个警告，提示开发者：你定义在 methods 对象中的函数名称已经被作为 data 对象中某个数据字段的 key 了，你应该换一个函数名字 */
       if (methods && hasOwn(methods, key)) {
         warn(
           `Method "${key}" has already been defined as a data property.`,
@@ -137,6 +150,11 @@ function initData (vm: Component) {
         )
       }
     }
+    /**
+     * 如果发现 data 数据字段的 key 已经在 props 中有定义了，那么就会打印警告。
+     * 另外这里有一个优先级的关系：props优先级 > data优先级 > methods优先级。
+     * 即如果一个 key 在 props 中有定义了那么就不能在 data 和 methods 中出现了；如果一个 key 在 data 中出现了那么就不能在 methods 中出现了
+     */
     if (props && hasOwn(props, key)) {
       process.env.NODE_ENV !== 'production' && warn(
         `The data property "${key}" is already declared as a prop. ` +
@@ -148,9 +166,18 @@ function initData (vm: Component) {
     }
   }
   // observe data
+  /**
+   * 调用 observe 函数将 data 数据对象转换成响应式的，可以说这句代码才是响应系统的开始
+   * (试一试将此句注释，然后改变data值试一试)
+   */
   observe(data, true /* asRootData */)
 }
 
+/**
+ * getData 函数的作用其实就是通过调用 data 函数获取真正的数据对象并返回 , 即：data.call(vm, vm)
+ * @param {*} data  data 选项是一个函数
+ * @param {*} vm  Vue 实例对象
+ */
 export function getData (data: Function, vm: Component): any {
   // #7573 disable dep collection when invoking data getters
   pushTarget()
