@@ -33,6 +33,8 @@ export function toggleObserving (value: boolean) {
  * object. Once attached, the observer converts the target
  * object's property keys into getter/setters that
  * collect dependencies and dispatch updates.
+ * Observer 类的实例对象将拥有三个实例属性，分别是 value、dep 和 vmCount
+ * 以及两个实例方法 walk 和 observeArray
  */
 export class Observer {
   value: any;
@@ -45,6 +47,7 @@ export class Observer {
     this.vmCount = 0
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
+      //区分数据对象到底是数组还是一个纯对象
       const augment = hasProto
         ? protoAugment
         : copyAugment
@@ -118,11 +121,11 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     //if 分支的作用是用来避免重复观测一个数据对象
     ob = value.__ob__
   } else if (
-    shouldObserve &&
-    !isServerRendering() &&
-    (Array.isArray(value) || isPlainObject(value)) &&
-    Object.isExtensible(value) &&
-    !value._isVue
+    shouldObserve && //shouldObserve 想象成一个开关，为 true 时说明打开了开关，此时可以对数据进行观测
+    !isServerRendering() && //用来判断是否是服务端渲染,也就是说只有当不是服务端渲染的时候才会观测数据
+    (Array.isArray(value) || isPlainObject(value)) && //只有当数据对象是数组或纯对象的时候，才有必要对其进行观测
+    Object.isExtensible(value) && //也就是说要被观测的数据对象必须是可扩展的
+    !value._isVue //我们知道 Vue 实例对象拥有 _isVue 属性，所以这个条件用来避免 Vue 实例对象被观测
   ) {
     //创建一个 Observer 实例
     ob = new Observer(value)
@@ -135,6 +138,9 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 
 /**
  * Define a reactive property on an Object.
+ * defineReactive 函数的核心就是 将数据对象的数据属性转换为访问器属性
+ * 即为数据对象的属性设置一对 getter/setter
+ * defineReactive 接收五个参数，但是在 walk 方法中调用 defineReactive 函数时只传递了前两个参数，即数据对象和属性的键名
  */
 export function defineReactive (
   obj: Object,
@@ -162,6 +168,7 @@ export function defineReactive (
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
+      // 正确地返回属性值以及收集依赖
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
         dep.depend()
@@ -175,8 +182,10 @@ export function defineReactive (
       return value
     },
     set: function reactiveSetter (newVal) {
+      //第一正确地为属性设置新值，第二是能够触发相应的依赖
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      //(newVal !== newVal && value !== value)目的是为了排除NaN
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
