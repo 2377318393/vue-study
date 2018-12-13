@@ -13,4 +13,4 @@ const vm = new Vue({
 vm.location
 vm.a = 3 * 'sdfsdf';
 
-
+// 
